@@ -30,6 +30,14 @@ resource "aws_instance" "blog" {
 
 }
 
+module "blog_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "5.3.0"
+  name = "blog_new"
+
+  vpc_id = data.aws_vpc.default.id
+}
+
 resource "aws_security_group" "blog"{
   name = "blog"
   description = "Allow http and https in/ Allow everything out"
