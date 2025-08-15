@@ -83,8 +83,12 @@ module "blog_autoscaling" {
   min_size            = 1
   max_size            = 2
   vpc_zone_identifier = module.blog_vpc.public_subnets
-  target_group_arns   = [for tg in values(module.blog_alb.target_groups) : tg.arn]
   security_groups     = [module.blog_sg.security_group_id]
   instance_type       = var.instance_type
   image_id            = data.aws_ami.app_ami.id
+}
+
+resource "aws_autoscaling_attachment" "blog_attachment" {
+  autoscaling_group_name = module.blog_autoscaling.autoscaling_group_name
+  lb_target_group_arn    = module.blog_alb.target_groups["blog_tg"].arn
 }
