@@ -18,8 +18,8 @@ data "aws_ami" "app_ami" {
 # VPC Module - Latest Version 5.21.0
 module "blog_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.21"
-  
+  version = "~> 5.13"
+
   name = var.environment
   cidr = "10.0.0.0/16"
   
@@ -107,11 +107,10 @@ module "blog_alb" {
 # Auto Scaling Group Module - Latest Version
 module "blog_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 7.4"
+  version = "~> 6.10"  # Use 6.x version compatible with provider 6.x
   
   name = "blog-asg"
   
-  # Autoscaling group configuration
   min_size            = 1
   max_size            = 3
   desired_capacity    = 2
@@ -121,52 +120,10 @@ module "blog_autoscaling" {
   health_check_type         = "ELB"
   health_check_grace_period = 300
   
-  # Launch template configuration
-  launch_template_name        = "blog-launch-template"
-  launch_template_description = "Launch template for blog application"
-  
-  image_id      = data.aws_ami.app_ami.id
-  instance_type = var.instance_type
-  
-  # Security groups
-  security_groups = [module.blog_sg.security_group_id]
-  
-  # Enable detailed monitoring
-  enable_monitoring = true
-  
-  # User data for Tomcat configuration
-  user_data = base64encode(<<-EOF
-    #!/bin/bash
-    yum update -y
-    systemctl enable tomcat
-    systemctl start tomcat
-  EOF
-  )
-  
-  # Instance refresh configuration for zero-downtime deployments
-  instance_refresh = {
-    strategy = "Rolling"
-    preferences = {
-      checkpoint_delay       = 600
-      checkpoint_percentages = [35, 70, 100]
-      instance_warmup       = 300
-      min_healthy_percentage = 50
-    }
-    triggers = ["tag"]
-  }
-  
-  # Auto scaling policies
-  scaling_policies = {
-    avg_cpu_policy_up = {
-      policy_type = "TargetTrackingScaling"
-      target_tracking_configuration = {
-        predefined_metric_specification = {
-          predefined_metric_type = "ASGAverageCPUUtilization"
-        }
-        target_value = 70.0
-      }
-    }
-  }
+  launch_template_name = "blog-launch-template"
+  image_id            = data.aws_ami.app_ami.id
+  instance_type       = var.instance_type
+  security_groups     = [module.blog_sg.security_group_id]
   
   tags = {
     Environment = var.environment
