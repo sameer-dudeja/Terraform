@@ -48,7 +48,7 @@ resource "aws_security_group_rule" "blog_http_in"{
   security_group_id = aws_security_group.blog.id
 }
 
-resource "aws_security_group_rule" "blog_http_in"{
+resource "aws_security_group_rule" "blog_everything_out"{
   type = "egress"
   from_port = 0
   to_port = 0
