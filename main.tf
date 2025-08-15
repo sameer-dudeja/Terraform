@@ -120,7 +120,7 @@ module "blog_alb" {
 ###################################
 module "blog_asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "6.10.0"
+  version = "7.7.0"
 
   name                      = "blog-asg"
   min_size                  = 1
