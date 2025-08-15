@@ -15,11 +15,11 @@ data "aws_ami" "app_ami" {
   }
 }
 
-# VPC Module - Latest Version 5.21.0
+# VPC Module
 module "blog_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.13"
-
+  version = "~> 5.0"  # Compatible with AWS provider 5.x
+  
   name = var.environment
   cidr = "10.0.0.0/16"
   
@@ -35,10 +35,10 @@ module "blog_vpc" {
   }
 }
 
-# Security Group Module - Latest Version
+# Security Group Module
 module "blog_sg" {
   source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
+  version = "~> 4.0"  # Compatible with AWS provider 5.x
   
   name   = "blog-sg"
   vpc_id = module.blog_vpc.vpc_id
@@ -53,10 +53,10 @@ module "blog_sg" {
   }
 }
 
-# Application Load Balancer Module - Latest Version 9.17.0
+# Application Load Balancer Module
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 9.17"
+  version = "~> 8.7"  # Compatible with AWS provider 5.x
   
   name               = "blog-alb"
   load_balancer_type = "application"
@@ -64,12 +64,11 @@ module "blog_alb" {
   subnets            = module.blog_vpc.public_subnets
   security_groups    = [module.blog_sg.security_group_id]
   
-  # Enable deletion protection for production
   enable_deletion_protection = false
   
   target_groups = [
     {
-      name             = "blog-tg"
+      name_prefix      = "blog-"
       backend_protocol = "HTTP"
       backend_port     = 8080  # Tomcat default port
       target_type      = "instance"
@@ -88,14 +87,11 @@ module "blog_alb" {
     }
   ]
   
-  listeners = [
+  http_tcp_listeners = [
     {
-      port     = 80
-      protocol = "HTTP"
-      
-      forward = {
-        target_group_key = "blog-tg"
-      }
+      port               = 80
+      protocol           = "HTTP"
+      target_group_index = 0
     }
   ]
   
@@ -104,10 +100,10 @@ module "blog_alb" {
   }
 }
 
-# Auto Scaling Group Module - Latest Version
+# Auto Scaling Group Module
 module "blog_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 6.10"  # Use 6.x version compatible with provider 6.x
+  version = "~> 6.5"  # Compatible with AWS provider 5.x
   
   name = "blog-asg"
   
@@ -115,15 +111,27 @@ module "blog_autoscaling" {
   max_size            = 3
   desired_capacity    = 2
   vpc_zone_identifier = module.blog_vpc.public_subnets
-  target_group_arns   = module.blog_alb.target_groups
+  target_group_arns   = module.blog_alb.target_group_arns
   
   health_check_type         = "ELB"
   health_check_grace_period = 300
   
-  launch_template_name = "blog-launch-template"
-  image_id            = data.aws_ami.app_ami.id
-  instance_type       = var.instance_type
-  security_groups     = [module.blog_sg.security_group_id]
+  # Launch template configuration
+  launch_template_name        = "blog-launch-template"
+  launch_template_description = "Launch template for blog application"
+  
+  image_id      = data.aws_ami.app_ami.id
+  instance_type = var.instance_type
+  security_groups = [module.blog_sg.security_group_id]
+  
+  # User data for Tomcat
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    yum update -y
+    systemctl enable tomcat
+    systemctl start tomcat
+  EOF
+  )
   
   tags = {
     Environment = var.environment
