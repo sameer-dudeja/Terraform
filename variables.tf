@@ -1,4 +1,11 @@
 variable "instance_type" {
-  description = "Type of EC2 instance to provision"
+  description = "EC2 instance type"
+  type        = string
   default     = "t3.nano"
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-west-2"
 }

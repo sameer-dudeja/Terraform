@@ -1,29 +1,3 @@
-terraform {
-  required_version = ">= 1.5.7"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 6.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t3.nano"
-}
-
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-west-2"
-}
-
 data "aws_ami" "app_ami" {
   most_recent = true
   filter {
