@@ -1,26 +1,50 @@
+terraform {
+  required_version = ">= 1.5.7"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 6.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.nano"
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-west-2"
+}
+
 data "aws_ami" "app_ami" {
   most_recent = true
-
   filter {
     name   = "name"
     values = ["bitnami-tomcat-*-x86_64-hvm-ebs-nami"]
   }
-
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
   }
-
   owners = ["979382823631"] # Bitnami
 }
 
 module "blog_vpc" {
-  source = "terraform-aws-modules/vpc/aws"
-
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 4.0"
+  
   name = "dev"
   cidr = "10.0.0.0/16"
-
-  azs             = ["us-west-2a","us-west-2b","us-west-2c"]
+  
+  azs             = ["us-west-2a", "us-west-2b", "us-west-2c"]
   public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
 
   tags = {
@@ -29,19 +53,17 @@ module "blog_vpc" {
   }
 }
 
-module "blog_autoscaling" {
-  source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 7.0"
+module "blog_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+  
+  vpc_id = module.blog_vpc.vpc_id
+  name   = "blog"
 
-  name = "blog"
-
-  min_size            = 1
-  max_size            = 2
-  vpc_zone_identifier = module.blog_vpc.public_subnets
-  target_group_arns   = module.blog_alb.target_group_arns
-  security_groups     = [module.blog_sg.security_group_id]
-  instance_type       = var.instance_type
-  image_id            = data.aws_ami.app_ami.id
+  ingress_rules       = ["https-443-tcp", "http-80-tcp"]
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  egress_rules        = ["all-all"]
+  egress_cidr_blocks  = ["0.0.0.0/0"]
 }
 
 module "blog_alb" {
@@ -78,14 +100,17 @@ module "blog_alb" {
   }
 }
 
-module "blog_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"  # Updated to compatible version
+module "blog_autoscaling" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "~> 9.0"
 
-  vpc_id  = module.blog_vpc.vpc_id
-  name    = "blog"
-  ingress_rules       = ["https-443-tcp","http-80-tcp"]
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  egress_rules        = ["all-all"]
-  egress_cidr_blocks  = ["0.0.0.0/0"]
+  name = "blog"
+
+  min_size            = 1
+  max_size            = 2
+  vpc_zone_identifier = module.blog_vpc.public_subnets
+  target_group_arns   = [for tg in values(module.blog_alb.target_groups) : tg.arn]
+  security_groups     = [module.blog_sg.security_group_id]
+  instance_type       = var.instance_type
+  image_id            = data.aws_ami.app_ami.id
 }
