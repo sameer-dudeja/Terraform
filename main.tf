@@ -42,7 +42,7 @@ module "blog_sg" {
 
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 9.0"
+  version = "~> 8.0"
 
   name               = "blog-alb"
   load_balancer_type = "application"
@@ -76,7 +76,7 @@ module "blog_alb" {
 
 module "blog_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 9.0"
+  version = "~> 6.5"
 
   name = "blog"
 
