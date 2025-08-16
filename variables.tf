@@ -3,6 +3,12 @@ variable "instance_type" {
   default     = "t3.nano"
 }
 
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-west-2"
+}
+
 variable "ami_filter" {
   description = "Name filter and owner for AMI"
 
