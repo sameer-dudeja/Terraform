@@ -8,7 +8,7 @@ variable "aws_region" {
     type = object({
         region = string
     })
-  default  {
+  default = {
     region = "us-west-2"
   }   
 }
