@@ -5,8 +5,12 @@ variable "instance_type" {
 
 variable "aws_region" {
   description = "AWS region"
-  type        = string
-  default     = "us-west-2"
+    type = object({
+        region = string
+    })
+  default  {
+    region = "us-west-2"
+  }   
 }
 
 variable "ami_filter" {
