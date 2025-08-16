@@ -24,7 +24,7 @@ module "blog_vpc" {
   name = var.environment.name
   cidr = "${var.environment.network_prefix}.0.0/16"
 
-  azs             = ["${var.aws_region.type}a", "${var.aws_region.type}b", "${var.aws_region.type}c"]
+  azs             = ["${var.aws_region.region}a", "${var.aws_region.region}b", "${var.aws_region.region}c"]
   public_subnets  = ["${var.environment.network_prefix}.101.0/24", "${var.environment.network_prefix}.102.0/24", "${var.environment.network_prefix}.103.0/24"]
 
   tags = {
